@@ -1,0 +1,16 @@
+include/*.h
+include/*.hpp
+include/*.inl
+examples/*.h
+examples/*.hpp
+examples/*.inl
+examples/*.cpp
+src/*.h
+src/*.hpp
+src/*.inl
+src/*.cpp
+tests/*.h
+tests/*.hpp
+tests/*.inl
+tests/*.cpp
+

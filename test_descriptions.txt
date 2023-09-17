@@ -1,0 +1,21 @@
+simulated_clock
+	Test clock that forwards only on user request
+bundle
+	Test pointer bundle for complex depending inheritence trees
+type_info
+	C++ runtime type information
+pmte
+	PMTE (PolyMorphic Type Erase) basic tests
+pmte_traits
+	Test PMTE type traits
+pointer_cast
+	Test PMTE pointer casting
+handler
+	Test PMTE type handlers
+visitor
+	Test visitor class on PMTE types
+messaging
+	Test to send different message types
+messaging_perf
+	Test messaging performance
+
