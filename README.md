@@ -1,76 +1,89 @@
 # File tree
 
-<pre><font color="#3465A4"><b>.</b></font>
-├── <font color="#4E9A06"><b>build.sh</b></font>
+.
+├── build.sh
+├── build_tracy_capture.sh
+├── build_tracy_profiler.sh
+├── clean.sh
 ├── CMakeLists.txt
-├── <font color="#4E9A06"><b>configure.sh</b></font>
-├── <font color="#3465A4"><b>examples</b></font>
-│   ├── <font color="#3465A4"><b>atm</b></font>
-│   │   ├── atm_machine.hpp
-│   │   ├── atm_messages.hpp
-│   │   ├── bank_machine.hpp
-│   │   ├── CMakeLists.txt
-│   │   ├── interface_machine.hpp
-│   │   ├── logger.hpp
-│   │   └── main.cpp
-│   ├── atm_machine.hpp
-│   ├── CMakeLists.txt
-│   └── <font color="#3465A4"><b>task</b></font>
-│       ├── CMakeLists.txt
-│       └── main.cpp
-├── <font color="#3465A4"><b>include</b></font>
-│   ├── <font color="#3465A4"><b>messaging</b></font>
-│   │   ├── async.hpp
-│   │   ├── broadcasting_process.hpp
-│   │   ├── close_queue.hpp
-│   │   ├── <font color="#3465A4"><b>coroutine</b></font>
-│   │   │   ├── all.hpp
-│   │   │   ├── message_queue.hpp
-│   │   │   └── types.hpp
-│   │   ├── dispatcher_base.hpp
-│   │   ├── dispatcher.hpp
-│   │   ├── interfaces.hpp
-│   │   ├── <font color="#3465A4"><b>multithread</b></font>
-│   │   │   ├── all.hpp
-│   │   │   ├── message_queue.hpp
-│   │   │   └── types.hpp
-│   │   ├── naming.hpp
-│   │   ├── process.hpp
-│   │   ├── process_manager.hpp
-│   │   ├── pump.hpp
-│   │   ├── queue_base.hpp
-│   │   ├── receiver.hpp
-│   │   ├── sender.hpp
-│   │   ├── stop_source.hpp
-│   │   ├── stop_token.hpp
-│   │   └── template_dispatcher.hpp
-│   └── <font color="#3465A4"><b>util</b></font>
-│       ├── algorithm.hpp
-│       ├── allocator.hpp
-│       ├── attributes.hpp
-│       ├── bundle.hpp
-│       ├── chrono_io.hpp
-│       ├── debug.hpp
-│       ├── inspect.hpp
-│       ├── lock_free_queue.hpp
-│       ├── math.hpp
-│       ├── pmte.hpp
-│       ├── pointer_cast.hpp
-│       ├── shared_library.hpp
-│       ├── simulated_clock.hpp
-│       ├── traits.hpp
-│       └── type_info.hpp
-├── Jenkinsfile
+├── code_coverage.sh
+├── configure_g++-11.sh
+├── configure.sh
+├── examples
+│   ├── atm
+│   │   ├── atm_machine.hpp
+│   │   ├── atm_messages.hpp
+│   │   ├── bank_machine.hpp
+│   │   ├── CMakeLists.txt
+│   │   ├── interface_machine.hpp
+│   │   ├── logger.hpp
+│   │   └── main.cpp
+│   ├── CMakeLists.txt
+│   └── task
+│       ├── CMakeLists.txt
+│       └── main.cpp
+├── include
+│   ├── messaging
+│   │   ├── async.hpp
+│   │   ├── broadcasting_process.hpp
+│   │   ├── close_queue.hpp
+│   │   ├── coroutine
+│   │   │   ├── all.hpp
+│   │   │   ├── message_queue.hpp
+│   │   │   └── types.hpp
+│   │   ├── dispatcher_base.hpp
+│   │   ├── dispatcher.hpp
+│   │   ├── multithread
+│   │   │   ├── all.hpp
+│   │   │   ├── message_queue.hpp
+│   │   │   └── types.hpp
+│   │   ├── naming.hpp
+│   │   ├── process.hpp
+│   │   ├── process_manager.hpp
+│   │   ├── pump.hpp
+│   │   ├── queue_base.hpp
+│   │   ├── receiver.hpp
+│   │   ├── sender.hpp
+│   │   ├── stop_source.hpp
+│   │   ├── stop_token.hpp
+│   │   ├── template_dispatcher.hpp
+│   │   └── time.hpp
+│   └── util
+│       ├── algorithm.hpp
+│       ├── allocator.hpp
+│       ├── attributes.hpp
+│       ├── bundle.hpp
+│       ├── chrono_io.hpp
+│       ├── inspect.hpp
+│       ├── lock_free_queue.hpp
+│       ├── logger.hpp
+│       ├── logger_spdlog.hpp
+│       ├── math.hpp
+│       ├── pmte.hpp
+│       ├── pointer_cast.hpp
+│       ├── shared_library.hpp
+│       ├── simulated_clock.hpp
+│       ├── traits.hpp
+│       ├── type_info.hpp
+│       └── type_list.hpp
+├── install.sh
 ├── LICENSE.txt
 ├── README.md
-├── <font color="#4E9A06"><b>reformat.sh</b></font>
-├── <font color="#3465A4"><b>src</b></font>
-│   ├── util__allocator.cpp
-│   ├── util__debug.cpp
-│   ├── util__pmte.cpp
-│   ├── util__simulated_clock.cpp
-│   └── util__type_info.cpp
-└── <font color="#3465A4"><b>tests</b></font>
+├── reformat.sh
+├── show_profile.sh
+├── src
+│   ├── messaging__process.cpp
+│   ├── util__allocator.cpp
+│   ├── util__debug.cpp
+│   ├── util__debug_spdlog.cpp
+│   ├── util__logger.cpp
+│   ├── util__logger_spdlog.cpp
+│   ├── util__pmte.cpp
+│   ├── util__simulated_clock.cpp
+│   └── util__type_info.cpp
+├── start_tracy_capture.sh
+├── test_descriptions.txt
+└── tests
     ├── CMakeLists.txt
     ├── test_bundle.cpp
     ├── test_handler.cpp
@@ -78,10 +91,10 @@
     ├── test_messaging_perf.cpp
     ├── test_pmte.cpp
     ├── test_pmte_traits.cpp
+    ├── test_pointer_cast.cpp
     ├── test_simulated_clock.cpp
     ├── test_type_info.cpp
     └── test_visitor.cpp
-</pre>
 
 ## Messaging
 ## Multithreaded and coroutine messaging framework for C++14 and above.
