@@ -38,6 +38,7 @@ else()
 endif()
 
 option(WITH_TRACY "Use Tracy profiler support for allocator." OFF)
+option(WITH_SPDLOG "Use SpdLog external logger library" OFF)
 option(WITH_TRACER_SUPPORT "Enable TRACER_FUNC support." OFF)
 option(WITH_MESSAGE_SET_THREAD_NAME "Allow system threads to follow the process name." OFF)
 option(WITH_MESSAGE_SET_THREAD_PRIORITY "Allow system threads to have their priority changed." OFF)
@@ -65,6 +66,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS Off)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Concurrent Queue
 FetchContent_Declare(
     ConcurrentQueue
     GIT_REPOSITORY https://github.com/cameron314/concurrentqueue.git
@@ -83,6 +85,7 @@ if(NOT ConcurrentQueue_POPULATED)
   target_include_directories(ConcurrentQueue INTERFACE ${concurrentqueue_SOURCE_DIR})
 endif()
 
+# Headers
 set(messaging_HEADERS
     include/messaging/multithread/all.hpp
     include/messaging/multithread/message_queue.hpp
@@ -111,7 +114,6 @@ set(messaging_HEADERS
     include/util/bundle.hpp
     include/util/chrono_io.hpp
     include/util/logger.hpp
-    include/util/logger_spdlog.hpp
     include/util/inspect.hpp
     include/util/lock_free_queue.hpp
     include/util/math.hpp
@@ -125,17 +127,16 @@ set(messaging_HEADERS
 )
 
 if(WITH_BOOST_COROUTINES)
-list(APPEND messaging_HEADERS
-    include/messaging/coroutine/all.hpp
-    include/messaging/coroutine/message_queue.hpp
-    include/messaging/coroutine/types.hpp
+    list(APPEND messaging_HEADERS
+        include/messaging/coroutine/all.hpp
+        include/messaging/coroutine/message_queue.hpp
+        include/messaging/coroutine/types.hpp
 )
 endif()
 
 set(messaging_SOURCES
     src/util__allocator.cpp
     src/util__logger.cpp
-    src/util__logger_spdlog.cpp
     src/util__pmte.cpp
     src/util__simulated_clock.cpp
     src/util__type_info.cpp
@@ -166,21 +167,6 @@ if(COMPILER_SUPPORTS_MARCH_NATIVE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
 
-# SPDLOG
-FetchContent_Declare(
-    SpdLog
-    GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG v1.11.0
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-)
-FetchContent_GetProperties(SpdLog)
-if(NOT spdlog_POPULATED)
-    FetchContent_Populate(SpdLog)
-    add_subdirectory(${spdlog_SOURCE_DIR} ${spdlog_BINARY_DIR})
-endif()
-target_include_directories(${PROJECT_NAME} PRIVATE ${spdlog_SOURCE_DIR}/include)
-
 # Tracy
 if(WITH_TRACY)
     add_compile_definitions(WITH_TRACY)
@@ -203,7 +189,35 @@ if(WITH_TRACY)
     target_link_libraries(${PROJECT_NAME} PUBLIC TracyClient.a)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ConcurrentQueue pthread spdlog)
+# SPDLOG
+if(WITH_SPDLOG)
+    list(APPEND messaging_HEADERS
+        include/util/logger_spdlog.hpp
+    )
+    list(APPEND messaging_SOURCES
+        src/util__logger_spdlog.cpp
+    )
+    FetchContent_Declare(
+        SpdLog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG v1.11.0
+        GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
+    )
+    FetchContent_GetProperties(SpdLog)
+    if(NOT spdlog_POPULATED)
+        FetchContent_Populate(SpdLog)
+        add_subdirectory(${spdlog_SOURCE_DIR} ${spdlog_BINARY_DIR})
+    endif()
+    target_include_directories(${PROJECT_NAME} PRIVATE ${spdlog_SOURCE_DIR}/include)
+endif()
+
+target_link_libraries(${PROJECT_NAME} PUBLIC ConcurrentQueue pthread)
+
+if(WITH_SPDLOG)
+    target_link_libraries(${PROJECT_NAME} PUBLIC spdlog)
+    add_compile_definitions(WITH_SPDLOG)
+endif()
 
 if(WITH_BOOST_COROUTINES)
     target_link_libraries(${PROJECT_NAME} PUBLIC boost_context)
