@@ -111,7 +111,6 @@ set(messaging_HEADERS
     include/util/bundle.hpp
     include/util/chrono_io.hpp
     include/util/logger.hpp
-    include/util/logger_spdlog.hpp
     include/util/inspect.hpp
     include/util/lock_free_queue.hpp
     include/util/math.hpp
@@ -135,7 +134,6 @@ endif()
 set(messaging_SOURCES
     src/util__allocator.cpp
     src/util__logger.cpp
-    src/util__logger_spdlog.cpp
     src/util__pmte.cpp
     src/util__simulated_clock.cpp
     src/util__type_info.cpp
@@ -166,21 +164,6 @@ if(COMPILER_SUPPORTS_MARCH_NATIVE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
 
-# SPDLOG
-FetchContent_Declare(
-    SpdLog
-    GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG v1.11.0
-    GIT_SHALLOW TRUE
-    GIT_PROGRESS TRUE
-)
-FetchContent_GetProperties(SpdLog)
-if(NOT spdlog_POPULATED)
-    FetchContent_Populate(SpdLog)
-    add_subdirectory(${spdlog_SOURCE_DIR} ${spdlog_BINARY_DIR})
-endif()
-target_include_directories(${PROJECT_NAME} PRIVATE ${spdlog_SOURCE_DIR}/include)
-
 # Tracy
 if(WITH_TRACY)
     add_compile_definitions(WITH_TRACY)
@@ -203,7 +186,7 @@ if(WITH_TRACY)
     target_link_libraries(${PROJECT_NAME} PUBLIC TracyClient.a)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ConcurrentQueue pthread spdlog)
+target_link_libraries(${PROJECT_NAME} PUBLIC ConcurrentQueue pthread)
 
 if(WITH_BOOST_COROUTINES)
     target_link_libraries(${PROJECT_NAME} PUBLIC boost_context)
