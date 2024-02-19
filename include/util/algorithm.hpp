@@ -475,6 +475,13 @@ template <typename T>
 using tail_t = typename tail<T>::type;
 //@}
 
+/**
+ * @brief Enforce compile time evaluation of 'constexpr' expression.
+ */
+consteval auto compile_time(auto value) {
+    return value;
+}
+
 } // namespace util
 
 #endif /* INCLUDE__UTIL__ALGORITHM_HPP */
