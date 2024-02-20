@@ -475,12 +475,20 @@ template <typename T>
 using tail_t = typename tail<T>::type;
 //@}
 
+#if __cplusplus >= CPP20_STANDARD
 /**
  * @brief Enforce compile time evaluation of 'constexpr' expression.
  */
 consteval auto compile_time(auto value) {
     return value;
 }
+#elif __cplusplus >= CPP17_STANDARD
+/**
+ * @brief Enforce compile time evaluation of 'constexpr' expression.
+ */
+template <auto V>
+static constexpr auto compile_time = V;
+#endif
 
 } // namespace util
 
