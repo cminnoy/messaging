@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14.0)
+cmake_minimum_required(VERSION 3.16.5)
 project(task LANGUAGES CXX VERSION 1.0.0)
 
 cmake_policy(SET CMP0063 NEW)

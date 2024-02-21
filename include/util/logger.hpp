@@ -50,7 +50,9 @@ static_assert(__cplusplus >= CPP14_STANDARD, "Minimum required standard is C++14
 #include <util/attributes.hpp>
 #include <util/traits.hpp>
 
+#ifdef WITH_TRACER_SUPPORT
 #include <boost/preprocessor.hpp>
+#endif
 
 #define THROW_NOT_IMPLEMENTED                                      \
   ::util::throw_not_implemented(__FILE__, __FUNCTION__, __LINE__); \

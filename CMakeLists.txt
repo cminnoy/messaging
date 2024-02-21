@@ -83,6 +83,24 @@ if(NOT ConcurrentQueue_POPULATED)
   target_include_directories(ConcurrentQueue INTERFACE ${concurrentqueue_SOURCE_DIR})
 endif()
 
+if(WITH_BOOST_COROUTINES OR WITH_TRACER_SUPPORT)
+  find_package(Boost 1.74.0 COMPONENTS coroutine2 context)
+  if(Boost_FOUND)
+    message("Boost component 'context' found on system.")
+  else()
+    message("Boost component 'context' NOT found on system; fetching from GitHub.")
+    set(BOOST_INCLUDE_LIBRARIES context)
+    set(BOOST_ENABLE_CMAKE ON)
+    FetchContent_Declare(
+        Boost
+        URL https://github.com/boostorg/boost/releases/download/boost-1.84.0/boost-1.84.0.7z
+        USES_TERMINAL_DOWNLOAD TRUE
+        DOWNLOAD_NO_EXTRACT FALSE
+    )
+    FetchContent_MakeAvailable(Boost)
+  endif()
+endif()
+
 set(messaging_HEADERS
     include/messaging/multithread/all.hpp
     include/messaging/multithread/message_queue.hpp
@@ -189,11 +207,17 @@ endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC ConcurrentQueue pthread)
 
 if(WITH_BOOST_COROUTINES)
-    target_link_libraries(${PROJECT_NAME} PUBLIC boost_context)
+    if(NOT Boost_FOUND)
+        target_include_directories(${PROJECT_NAME} PUBLIC ${boost_SOURCE_DIR}/libs/coroutine2/include)
+    endif()
+    target_link_libraries(${PROJECT_NAME} PUBLIC Boost::context)
     add_compile_definitions(WITH_BOOST_COROUTINES)
 endif()
 
 if(WITH_TRACER_SUPPORT)
+    if(NOT Boost_FOUND)
+        target_include_directories(${PROJECT_NAME} PUBLIC ${boost_SOURCE_DIR}/libs/preprocessor/include)
+    endif()
     add_compile_definitions(WITH_TRACER_SUPPORT)
 endif()
 

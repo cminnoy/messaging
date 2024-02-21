@@ -1,9 +1,12 @@
-Dependencies for manual installation:
-BOOST CoRoutine
+Dependency always:
+Concurrent lock-free queue (https://github.com/cameron314/concurrentqueue.git)
+
+Dependencies if WITH_TESTS:
 Google GTest C++ test framework
 
-Example on how to install the dependencies on Ubuntu:
-sudo apt-get install libboost-coroutine-dev libgtest-dev
+Dependencies if WITH_BOOST_COROUTINES:
+BOOST.Coroutine2
+BOOST.Context
 
-This library depends on the concurrent queue library from Cameron which will be auto-downloaded from GitHub:
-https://github.com/cameron314/concurrentqueue.git
+All libraries not installed will auto-downloaded from GitHub during configuration.
+

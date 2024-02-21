@@ -1,8 +1,6 @@
 ## Messaging
 ## Multithreaded and coroutine messaging framework for C++14 and above.
 
-Original idea from Antony Williams
-
 ### Intro
 
 The framework provides functionality to safely send messages as instances of **struct**/**class** or basic types between processes in a fully multi-threaded environment.
@@ -295,5 +293,8 @@ example:
 
 # Tools
 
-Thanks to Alan de Freitas for:
-https://github.com/alandefreitas/clang-unformat
+Thanks to Alan de Freitas for: https://github.com/alandefreitas/clang-unformat
+
+Thanks to Antony Williams for his great book on concurrent C++.
+
+Thanks to all the BOOST developers!

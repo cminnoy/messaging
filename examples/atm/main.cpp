@@ -119,8 +119,10 @@ public:
   using multithread_types = messaging::multithread::std_thread_types;
   using multithread_types_broadcast = messaging::multithread::std_thread_types_broadcast;
 
+#ifdef WITH_BOOST_COROUTINES
   using coroutine_types = messaging::coroutine::boost_coroutine2_types;
   using coroutine_types_broadcast = messaging::coroutine::boost_coroutine2_types_broadcast;
+#endif
 
   void run() {
     //* Push coroutines forward and wait until all processes are finished
@@ -129,7 +131,11 @@ public:
   }
 
 private:
-  messaging::process_manager<coroutine_types, multithread_types, coroutine_types_broadcast, multithread_types_broadcast> manager;
+  messaging::process_manager<
+#ifdef WITH_BOOST_COROUTINES
+    coroutine_types, coroutine_types_broadcast,
+#endif
+    multithread_types, multithread_types_broadcast> manager;
 };
 
 namespace std {
@@ -149,7 +155,6 @@ std::ostream & operator<<(std::ostream & out, std::vector<std::string> const & o
 //=============================================================================
 
 int main() {
-
 #ifdef WITH_BOOST_COROUTINES
   using multithread_types = messaging::multithread::std_thread_types;
   using multithread_types_broadcast = messaging::multithread::std_thread_types_broadcast;

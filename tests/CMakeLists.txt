@@ -1,5 +1,18 @@
 include(GoogleTest)
 find_package(GTest)
+if(NOT GTest_FOUND)
+  message("GTest not installed; fetching from GitHub.")
+  set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+  set(BUILD_GTEST ON CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.12.0
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS FALSE
+  )
+  FetchContent_MakeAvailable(googletest)
+endif()
 
 if(WITH_GCOV)
   set(CMAKE_CXX_FLAGS "-g -O0 -Wall -fprofile-arcs -ftest-coverage")
@@ -24,7 +37,7 @@ endif()
 function(add_cpp_test TESTNAME)
     add_executable(test_${TESTNAME} ${ARGN})
     set_target_properties(test_${TESTNAME} PROPERTIES CXX_VISIBILITY_PRESET default)
-    target_link_libraries(test_${TESTNAME} PRIVATE messaging GTest::GTest GTest::Main)
+    target_link_libraries(test_${TESTNAME} PRIVATE messaging GTest::gtest GTest::gtest_main)
     target_include_directories(test_${TESTNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
     if(WITH_TRACY)

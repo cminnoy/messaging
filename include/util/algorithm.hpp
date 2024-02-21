@@ -482,12 +482,14 @@ using tail_t = typename tail<T>::type;
 consteval auto compile_time(auto value) {
     return value;
 }
+#define ENFORCE_CONSTEVAL(X) ::util::compile_time(X)
 #elif __cplusplus >= CPP17_STANDARD
 /**
  * @brief Enforce compile time evaluation of 'constexpr' expression.
  */
 template <auto V>
 static constexpr auto compile_time = V;
+#define ENFORCE_CONSTEVAL(X) ::util::compile_time<X>
 #endif
 
 } // namespace util
