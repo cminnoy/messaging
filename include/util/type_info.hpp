@@ -54,6 +54,9 @@ namespace util {
 
 struct type_base;
 
+/**
+ * Trait information of the payload type.
+ */
 struct trait_info final {
   const std::size_t hash_code;
   const trait_info & const_traits;
@@ -142,34 +145,53 @@ NO_DISCARD FORCE_INLINE constexpr bool operator==(trait_info const & lhs, trait_
   return lhs.hash_code == rhs.hash_code;
 }
 
+/**
+ * General base class for type_info refering to the trait information of the designated type.
+ */
 struct type_base {
-  const trait_info & traits;
+  template <typename T>
+  friend struct type_info; //!< Give access to private init constructor
 
-  constexpr type_base(type_base &&) noexcept = default;
-  constexpr type_base(type_base const &) noexcept = default;
-  constexpr type_base & operator=(type_base &&) noexcept = delete;
-  constexpr type_base & operator=(type_base const &) = delete;
+  const trait_info & traits; //!< Read-only trait information of the designated type.
 
+  constexpr type_base(type_base &&) noexcept = default; //!< Default move constructor
+  constexpr type_base(type_base const &) noexcept = default; //!< Default copy constructor
+  constexpr type_base & operator=(type_base &&) noexcept = delete; //!< Default move assignment operator
+  constexpr type_base & operator=(type_base const &) = delete; //!< Default copy assignment operator
+
+  /**
+   * @brief Compare if both designated types are the same.
+   * @return true if this type is the same as the other type using their hash
+   */
   NO_DISCARD FORCE_INLINE constexpr bool has_same_type(type_base const & type) const noexcept {
     return traits.hash_code == type.traits.hash_code;
   }
 
 private:
 
-  template <typename T>
-  friend struct type_info;
-
-  constexpr explicit type_base(const trait_info & traits_) noexcept : traits(traits_) {}
+  constexpr explicit type_base(const trait_info & traits_) noexcept : traits(traits_) {} //!< Init constructor, to be called by type_info<T>
 };
 
+/**
+ * Compare equal operator.
+ * @return lhs == rhs
+ */
 NO_DISCARD FORCE_INLINE constexpr bool operator==(type_base const & lhs, type_base const & rhs) noexcept {
   return lhs.has_same_type(rhs);
 }
 
+/**
+ * Compare not equal operator.
+ * @return lhs != rhs
+ */
 NO_DISCARD constexpr bool operator!=(type_base const & lhs, type_base const & rhs) noexcept {
   return !lhs.has_same_type(rhs);
 }
 
+/**
+ * Compare less operator helper for associative containers.
+ * @return lhs < rhs
+ */
 NO_DISCARD constexpr bool operator<(type_base const & lhs, type_base const & rhs) noexcept {
   return lhs.traits.hash_code < rhs.traits.hash_code;
 }
@@ -195,10 +217,10 @@ struct type_info final : type_base {
   template <typename U>
   friend constexpr bool is_type_of(type_base const & o) noexcept;
 
-private:
-
   template <typename U>
   friend struct type_info;
+
+private:
 
 #if __cplusplus >= CPP20_STANDARD
   template <typename U = T>

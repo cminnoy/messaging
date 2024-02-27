@@ -148,6 +148,7 @@ inline std::ostream & operator<<(std::ostream & os, static_string const & s) {
  * @return auto
  * @note Type representations will be different between g++/clang and msvc
  * @todo Implement a parser to convert textual differences between the compilers into one consistent representation.
+ *       Maybe use https://github.com/peter-winter/ctpg
  */
 template <typename T>
 NO_DISCARD constexpr auto type_name() {

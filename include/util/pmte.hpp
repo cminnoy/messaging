@@ -80,12 +80,11 @@ namespace util {
 
 namespace pmte {
 
-//---------------------------------------------------------------------------------------------------------------------
-// base class of all PMTE types
-//---------------------------------------------------------------------------------------------------------------------
-
 namespace detail {
 
+/**
+ * @brief Base class of all PMTE types
+ */
 struct base {
   CPP20_CONSTEXPR virtual ~base() noexcept(true) {}
   NO_DISCARD CPP20_CONSTEXPR virtual type_base type() const noexcept = 0;
