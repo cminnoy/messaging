@@ -50,30 +50,33 @@ static_assert(__cplusplus >= CPP14_STANDARD, "Minimum required standard is C++14
 namespace messaging {
 
 class queue_base {
-public:
-  using mutex_type = std::recursive_mutex; // recursive as sender might be same as receiver
-  using pointer_type = util::pmte::unique_pmte_value;
+  public:
+    using mutex_type = std::recursive_mutex; // recursive as sender might be same as receiver
+    using pointer_type = util::pmte::unique_pmte_value;
 
-protected:
+  protected:
 
-  virtual void on_push() {}
+    virtual void on_push() {}
 
-  util::lock_free_queue<pointer_type> q;
-  std::atomic<bool> iswaiting;
+    util::lock_free_queue<pointer_type> q;
+    std::atomic<bool> iswaiting;
 
-public:
+  public:
 
-  queue_base() noexcept(std::is_nothrow_constructible<decltype(q), std::size_t>::value) : q() {}
-  virtual ~queue_base() noexcept(std::is_nothrow_destructible<decltype(q)>::value) = default;
+    queue_base() noexcept(std::is_nothrow_constructible<decltype(q), std::size_t>::value) : q() {}
+    virtual ~queue_base() noexcept(std::is_nothrow_destructible<decltype(q)>::value) = default;
 
-  void push(util::pmte::unique_pmte_value msg) {
-    q.push(std::move(msg));
-    on_push();
-  }
+    void push(util::pmte::unique_pmte_value msg) {
+        q.push(std::move(msg));
+        on_push();
+    }
 
-  NO_DISCARD inline std::size_t size() const noexcept(noexcept(q.size())) { return q.size(); }
-  NO_DISCARD inline bool empty() const noexcept(noexcept(q.empty())) { return q.empty(); }
-  NO_DISCARD inline bool waiting() const noexcept { return iswaiting; }
+    NO_DISCARD inline std::size_t size() const noexcept(noexcept(q.size())) { return q.size(); }
+    NO_DISCARD inline bool empty() const noexcept(noexcept(q.empty())) { return q.empty(); }
+    NO_DISCARD inline bool waiting() const noexcept { return iswaiting; }
+#if __cplusplus >= CPP20_STANDARD
+    inline void wait() const noexcept { iswaiting.wait(false); }
+#endif
 };
 
 } // namespace messaging
