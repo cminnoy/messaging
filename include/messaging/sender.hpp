@@ -51,645 +51,787 @@ namespace messaging {
 #if __cplusplus >= CPP20_STANDARD
 template <typename S, typename T>
 concept SenderType = requires(const S & s) {
-  typename S::template future_type<T>;
-  {
-    s.send(std::declval<T>())
-  };
+    typename S::template future_type<T>;
+    {
+        s.send(std::declval<T>())
+    };
 };
 #endif
 
 /**
- * @brief Generic interface of a sender class.
- */
+* @brief Generic interface of a sender class.
+*/
 struct sender_interface {
-  template <typename T>
-  using future_type = std::future<T>;
+    template <typename T>
+    using future_type = std::future<T>;
 
-  virtual ~sender_interface() noexcept = default;
+    virtual ~sender_interface() noexcept = default;
 
-  /**
-     * @brief Return (almost) unique token for this sender.
-     * @return std::size_t Almost unique token.
-     */
-  NO_DISCARD virtual std::size_t hash() const = 0;
+    /**
+    * @brief Return (almost) unique token for this sender.
+    * @return std::size_t Almost unique token.
+    */
+    NO_DISCARD virtual std::size_t hash() const = 0;
 
-  /**
-     * @brief Query if this sender is attached to a receiver.
-     * @return true if attached
-     * @return false if not attached
-     */
-  NO_DISCARD virtual operator bool() const noexcept = 0;
+    /**
+    * @brief Query if this sender is attached to a receiver.
+    * @return true if attached
+    * @return false if not attached
+    */
+    NO_DISCARD virtual operator bool() const noexcept = 0;
 
-  /**
-     * @brief Place a message into the receivers queue.
-     * @note Sending a message to an uninitialised sender is simply ignored without an error.
-     * @tparam RefType Optional base type used for polymorphic detection.
-     * @tparam Message Automatically deduced type of message.
-     * @tparam Args Optional argument pack used for yielding coroutine or thread.
-     * @param msg The message to send.
-     * @param args Optional arguments, each called with operator(); useful for yielding.
-     * @return Reference to self.
-     */
-  template <typename RefType = void, typename Message, typename... Args>
-  const sender_interface & send(Message && msg, Args &&... args) const {
-    transmit(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
-    for_each_arg([](auto && arg) { arg(); }, args...);
-    return *this;
-  }
+    /**
+    * @brief Place a message into the receivers queue.
+    * @note Sending a message to an uninitialised sender is simply ignored without an error.
+    * @tparam RefType Optional base type used for polymorphic detection.
+    * @tparam Message Automatically deduced type of message.
+    * @tparam Yield Optional argument used for yielding this sending coroutine or thread.
+    * @param msg The message to send.
+    * @param args Optional arguments, each called with operator(); useful for yielding.
+    * @return Reference to self.
+    */
+    template <typename RefType = void, typename Message, typename Yield>
+    sender_interface const & send(Message && msg, Yield && yield) const {
+        transmit(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+        yield();
+        return *this;
+    }
 
-  /**
-     * @brief Place a message into the receivers queue.
-     * @note Sending a message to an uninitialised sender is simply ignored without an error.
-     * @tparam RefType Optional base type used for polymorphic detection.
-     * @tparam Message Automatically deduced type of message.
-     * @param msg The message to send.
-     * @return Reference to self.
-     */
-  template <typename RefType = void, typename Message>
-  const sender_interface & send(Message && msg) const {
-    transmit(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
-    return *this;
-  }
+    /**
+    * @brief Place a message into the receivers queue.
+    * @note Sending a message to an uninitialised sender is simply ignored without an error.
+    * @tparam RefType Optional base type used for polymorphic detection.
+    * @tparam Message Automatically deduced type of message.
+    * @tparam Yield Optional argument used for yielding this sending coroutine or thread.
+    * @param resource A memory allocator resource to construct the packed PMTE in.
+    * @param msg The message to send.
+    * @param args Optional arguments, each called with operator(); useful for yielding.
+    * @return Reference to self.
+    */
+    template <typename RefType = void, typename Message, typename Yield>
+    sender_interface const & send(std::pmr::memory_resource & resource, Message && msg, Yield && yield) const {
+        transmit(util::pmte::make_unique_pmte<RefType>(resource, std::forward<Message>(msg)));
+        yield();
+        return *this;
+    }
 
-  /**
-     * @brief Send a packed PMTE message to the receivers end.
-     * @param msg The message to send.
-     * @return Reference to self.
-     */
-  virtual const sender_interface & transmit(util::pmte::unique_pmte_value msg) const = 0;
+    /**
+    * @brief Place a message into the receivers queue.
+    * @note Sending a message to an uninitialised sender is simply ignored without an error.
+    * @tparam RefType Optional base type used for polymorphic detection.
+    * @tparam Message Automatically deduced type of message.
+    * @param msg The message to send.
+    * @return Reference to self.
+    */
+    template <typename RefType = void, typename Message>
+    sender_interface const & send(Message && msg) const {
+        transmit(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+        return *this;
+    }
 
-  /**
-     * @brief Print sender information to stream.
-     * @return std::ostream& 
-     */
-  virtual std::ostream & print(std::ostream &) const = 0;
+    /**
+    * @brief Place a message into the receivers queue.
+    * @note Sending a message to an uninitialised sender is simply ignored without an error.
+    * @tparam RefType Optional base type used for polymorphic detection.
+    * @tparam Message Automatically deduced type of message.
+    * @param resource A memory allocator resource to construct the packed PMTE in.
+    * @param msg The message to send.
+    * @return Reference to self.
+    */
+    template <typename RefType = void, typename Message>
+    sender_interface const & send(std::pmr::memory_resource & resource, Message && msg) const {
+        transmit(util::pmte::make_unique_pmte<RefType>(resource, std::forward<Message>(msg)));
+        return *this;
+    }
 
-  /**
-     * @brief Print sender information to stream.
-     * @param out output stream
-     * @param o sender
-     * @return std::ostream& 
-     */
-  friend std::ostream & operator<<(std::ostream & out, const sender_interface & o) { return o.print(out); }
+    /**
+    * @brief Send a packed PMTE message to the receivers end.
+    * @param msg The message to send.
+    * @return Reference to self.
+    */
+    virtual const sender_interface & transmit(util::pmte::unique_pmte_value msg) const = 0;
+
+    /**
+    * @brief Print sender information to stream.
+    * @return std::ostream& 
+    */
+    virtual std::ostream & print(std::ostream &) const = 0;
+
+    /**
+    * @brief Print sender information to stream.
+    * @param out output stream
+    * @param o sender
+    * @return std::ostream& 
+    */
+    friend std::ostream & operator<<(std::ostream & out, sender_interface const & o) { return o.print(out); }
 };
 
 class sender_local_locked {
-private:
+  private:
 
-  friend class sender_local;
+    friend class sender_local;
 
-  std::shared_ptr<queue_base> q;
+    std::shared_ptr<queue_base> q;
 
-  sender_local_locked(std::shared_ptr<queue_base> q_) noexcept : q(q_) {}
+    sender_local_locked(std::shared_ptr<queue_base> q_) noexcept : q(q_) {}
 
-public:
-  using self = sender_local_locked;
+  public:
+    using self = sender_local_locked;
 
-  sender_local_locked() = delete;
-  ~sender_local_locked() noexcept = default;
-  sender_local_locked(self &&) = default;
-  sender_local_locked(self const &) = delete;
-  self & operator=(self &&) = default;
-  self & operator=(self const &) = delete;
+    sender_local_locked() = delete;
+    ~sender_local_locked() noexcept = default;
+    sender_local_locked(self &&) = default;
+    sender_local_locked(self const &) = delete;
+    self & operator=(self &&) = default;
+    self & operator=(self const &) = delete;
 
-  NO_DISCARD std::size_t hash() const { return reinterpret_cast<std::size_t>(q.get()); }
+    NO_DISCARD std::size_t hash() const { return reinterpret_cast<std::size_t>(q.get()); }
 
-  NO_DISCARD explicit operator bool() const noexcept { return q.operator bool(); }
+    NO_DISCARD explicit operator bool() const noexcept { return q.operator bool(); }
 
-  template <typename RefType = void, typename Message, typename... Args>
-  const self & send(Message && msg, Args &&... args) const {
-    if (q) {
-      q->push(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
-      for_each_arg([](auto && arg) { arg(); }, args...);
+    template <typename RefType = void, typename Message, typename Yield>
+    self const & send(Message && msg, Yield && yield) const {
+        if (q) {
+            q->push(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+            yield();
+        }
+        return *this;
     }
-    return *this;
-  }
 
-  template <typename RefType = void, typename Message>
-  const self & send(Message && msg) const {
-    if (q) {
-      q->push(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+    template <typename RefType = void, typename Message, typename Yield>
+    self const & send(std::pmr::memory_resource & resource, Message && msg, Yield && yield) const {
+        if (q) {
+            q->push(util::pmte::make_unique_pmte<RefType>(resource, std::forward<Message>(msg)));
+            yield();
+        }
+        return *this;
     }
-    return *this;
-  }
 
-  const self & transmit(util::pmte::unique_pmte_value msg) const {
-    if (q) {
-      q->push(std::move(msg));
+    template <typename RefType = void, typename Message>
+    self const & send(Message && msg) const {
+        if (q) {
+            q->push(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+        }
+        return *this;
     }
-    return *this;
-  }
 
-  inline self & then() & noexcept(true) { return *this; }
+    template <typename RefType = void, typename Message>
+    self const & send(std::pmr::memory_resource & resource, Message && msg) const {
+        if (q) {
+            q->push(util::pmte::make_unique_pmte<RefType>(resource, std::forward<Message>(msg)));
+        }
+        return *this;
+    }
 
-  inline const self & then() const & noexcept(true) { return *this; }
+    self const & transmit(util::pmte::unique_pmte_value msg) const {
+        if (q) {
+            q->push(std::move(msg));
+        }
+        return *this;
+    }
 
-  inline self && then() && noexcept(true) { return std::move(*this); }
+#if __cplusplus >= CPP20_STANDARD
+    self & wait() & noexcept(true) {
+        if (q) {
+            q->wait();
+        }
+        return *this;
+    }
 
-  inline const self && then() const && noexcept(true) { return std::move(*this); }
+    self const & wait() const & noexcept(true) {
+        if (q) {
+            q->wait();
+        }
+        return *this;
+    }
 
-  self & then(std::function<void()> f) & {
-    if (q) f();
-    return *this;
-  }
+    self && wait() && noexcept(true) {
+        if (q) {
+            q->wait();
+        }
+        return std::move(*this);
+    }
 
-  const self & then(std::function<void()> f) const & {
-    if (q) f();
-    return *this;
-  }
+    self const && wait() const && noexcept(true) {
+        if (q) {
+            q->wait();
+        }
+        return std::move(*this);
+    }
+#endif
 
-  self && then(std::function<void()> f) && {
-    if (q) f();
-    return std::move(*this);
-  }
+    inline self & then() & noexcept(true) { return *this; }
 
-  const self && then(std::function<void()> f) const && {
-    if (q) f();
-    return std::move(*this);
-  }
+    inline self const & then() const & noexcept(true) { return *this; }
 
-  self & then(std::function<void(self &)> f) & {
-    if (q) f(std::forward<self &>(*this));
-    return *this;
-  }
+    inline self && then() && noexcept(true) { return std::move(*this); }
 
-  const self & then(std::function<void(const self &)> f) const & {
-    if (q) f(*this);
-    return *this;
-  }
+    inline self const && then() const && noexcept(true) { return std::move(*this); }
 
-  self && then(std::function<void(self &&)> f) && {
-    if (q) f(std::forward<self &&>(*this));
-    return std::move(*this);
-  }
+    self & then(std::function<void()> f) & {
+        if (q) f();
+        return *this;
+    }
 
-  const self && then(std::function<void(const self &&)> f) const && {
-    if (q) f(std::forward<const self &&>(*this));
-    return std::move(*this);
-  }
+    self const & then(std::function<void()> f) const & {
+        if (q) f();
+        return *this;
+    }
 
-  self & or_else(std::function<void()> f) & {
-    if (not q) f();
-    return *this;
-  }
+    self && then(std::function<void()> f) && {
+        if (q) f();
+        return std::move(*this);
+    }
 
-  const self & or_else(std::function<void()> f) const & {
-    if (not q) f();
-    return *this;
-  }
+    self const && then(std::function<void()> f) const && {
+        if (q) f();
+        return std::move(*this);
+    }
 
-  self && or_else(std::function<void()> f) && {
-    if (not q) f();
-    return std::move(*this);
-  }
+    self & then(std::function<void(self &)> f) & {
+        if (q) f(std::forward<self &>(*this));
+        return *this;
+    }
 
-  const self && or_else(std::function<void()> f) const && {
-    if (not q) f();
-    return std::move(*this);
-  }
+    self const & then(std::function<void(self const &)> f) const & {
+        if (q) f(*this);
+        return *this;
+    }
 
-  self & or_else(std::function<void(self &)> f) & {
-    if (not q) f(*this);
-    return *this;
-  }
+    self && then(std::function<void(self &&)> f) && {
+        if (q) f(std::forward<self &&>(*this));
+        return std::move(*this);
+    }
 
-  const self & or_else(std::function<void(const self &)> f) const & {
-    if (not q) f(*this);
-    return *this;
-  }
+    self const && then(std::function<void(self const &&)> f) const && {
+        if (q) f(std::forward<const self &&>(*this));
+        return std::move(*this);
+    }
 
-  self && or_else(std::function<void(self &&)> f) && {
-    if (not q) f(std::forward<self &&>(*this));
-    return std::move(*this);
-  }
+    self & or_else(std::function<void()> f) & {
+        if (not q) f();
+        return *this;
+    }
 
-  const self && or_else(std::function<void(const self &&)> f) const && {
-    if (not q) f(std::forward<const self &&>(*this));
-    return std::move(*this);
-  }
+    self const & or_else(std::function<void()> f) const & {
+        if (not q) f();
+        return *this;
+    }
 
-  template <typename Exception = std::runtime_error>
-  self & or_throw(Exception exception = Exception("sender is null")) & noexcept(false) {
-    if (not q) throw exception;
-    return *this;
-  }
+    self && or_else(std::function<void()> f) && {
+        if (not q) f();
+        return std::move(*this);
+    }
 
-  template <typename Exception = std::runtime_error>
-  const self & or_throw(Exception exception = Exception("sender is null")) const & noexcept(false) {
-    if (not q) throw exception;
-    return *this;
-  }
+    self const && or_else(std::function<void()> f) const && {
+        if (not q) f();
+        return std::move(*this);
+    }
 
-  template <typename Exception = std::runtime_error>
-  self && or_throw(Exception exception = Exception("sender is null")) && noexcept(false) {
-    if (not q) throw exception;
-    return std::move(*this);
-  }
+    self & or_else(std::function<void(self &)> f) & {
+        if (not q) f(*this);
+        return *this;
+    }
 
-  template <typename Exception = std::runtime_error>
-  const self && or_throw(Exception exception = Exception("sender is null")) const && noexcept(false) {
-    if (not q) throw exception;
-    return std::move(*this);
-  }
+    self const & or_else(std::function<void(self const &)> f) const & {
+        if (not q) f(*this);
+        return *this;
+    }
 
-  self & or_throw(const char * const text) & noexcept(false) {
-    if (not q) throw std::runtime_error(text);
-    return *this;
-  }
+    self && or_else(std::function<void(self &&)> f) && {
+        if (not q) f(std::forward<self &&>(*this));
+        return std::move(*this);
+    }
 
-  const self & or_throw(const char * const text) const & noexcept(false) {
-    if (not q) throw std::runtime_error(text);
-    return *this;
-  }
+    self const && or_else(std::function<void(self const &&)> f) const && {
+        if (not q) f(std::forward<const self &&>(*this));
+        return std::move(*this);
+    }
 
-  self && or_throw(const char * const text) && noexcept(false) {
-    if (not q) throw std::runtime_error(text);
-    return std::move(*this);
-  }
+    template <typename Exception = std::runtime_error>
+    self & or_throw(Exception exception = Exception("sender is null")) & noexcept(false) {
+        if (not q) throw exception;
+        return *this;
+    }
 
-  const self && or_throw(const char * const text) const && noexcept(false) {
-    if (not q) throw std::runtime_error(text);
-    return std::move(*this);
-  }
+    template <typename Exception = std::runtime_error>
+    self const & or_throw(Exception exception = Exception("sender is null")) const & noexcept(false) {
+        if (not q) throw exception;
+        return *this;
+    }
+
+    template <typename Exception = std::runtime_error>
+    self && or_throw(Exception exception = Exception("sender is null")) && noexcept(false) {
+        if (not q) throw exception;
+        return std::move(*this);
+    }
+
+    template <typename Exception = std::runtime_error>
+    self const && or_throw(Exception exception = Exception("sender is null")) const && noexcept(false) {
+        if (not q) throw exception;
+        return std::move(*this);
+    }
+
+    self & or_throw(char const * const text) & noexcept(false) {
+        if (not q) throw std::runtime_error(text);
+        return *this;
+    }
+
+    self const & or_throw(char const * const text) const & noexcept(false) {
+        if (not q) throw std::runtime_error(text);
+        return *this;
+    }
+
+    self && or_throw(char const * const text) && noexcept(false) {
+        if (not q) throw std::runtime_error(text);
+        return std::move(*this);
+    }
+
+    self const && or_throw(char const * const text) const && noexcept(false) {
+        if (not q) throw std::runtime_error(text);
+        return std::move(*this);
+    }
 };
 
 class sender_local final : public sender_interface {
-private:
+  private:
 
-  std::weak_ptr<queue_base> q;
+    std::weak_ptr<queue_base> q;
 
-public:
-  using self = sender_local;
+  public:
+    using self = sender_local;
 
-  explicit sender_local(std::shared_ptr<queue_base> q_) noexcept : q(q_) {}
-  sender_local() noexcept = default;
-  ~sender_local() noexcept = default;
-  sender_local(self &&) noexcept = default;
-  sender_local(const self &) noexcept = default;
-  self & operator=(self &&) noexcept = default;
-  self & operator=(const self &) noexcept = default;
+    explicit sender_local(std::shared_ptr<queue_base> q_) noexcept : q(q_) {}
+    sender_local() noexcept = default;
+    ~sender_local() noexcept = default;
+    sender_local(self &&) noexcept = default;
+    sender_local(const self &) noexcept = default;
+    self & operator=(self &&) noexcept = default;
+    self & operator=(self const &) noexcept = default;
 
-  bool operator==(const self & other) const noexcept { return !q.expired() && q.lock() == other.q.lock(); }
+    bool operator==(self const & other) const noexcept { return !q.expired() && q.lock() == other.q.lock(); }
 
-  bool operator<(const self & other) const noexcept { return !q.expired() && q.lock() < other.q.lock(); }
+    bool operator<(self const & other) const noexcept { return !q.expired() && q.lock() < other.q.lock(); }
 
-  NO_DISCARD std::size_t hash() const override { return reinterpret_cast<std::size_t>(q.lock().get()); }
+    NO_DISCARD std::size_t hash() const override { return reinterpret_cast<std::size_t>(q.lock().get()); }
 
-  std::ostream & print(std::ostream & out) const override {
-    if (auto p = q.lock()) out << p;
-    else
+    std::ostream & print(std::ostream & out) const override {
+        if (auto p = q.lock()) out << p;
+        else
 #if __cplusplus >= CPP17_STANDARD && __GNUC__ >= 9
-      out << nullptr;
+            out << nullptr;
 #else
-      out << "nullptr";
+            out << "nullptr";
 #endif
-    return out;
-  }
-
-  sender_local_locked lock() { return q.lock(); }
-
-  template <typename RefType = void, typename Message, typename... Args>
-  const self & send(Message && msg, Args &&... args) const {
-    if (auto p = q.lock()) {
-      p->push(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
-      for_each_arg([](auto && arg) { arg(); }, args...);
+        return out;
     }
-    return *this;
-  }
 
-  template <typename RefType = void, typename Message>
-  const self & send(Message && msg) const {
-    if (auto p = q.lock()) {
-      p->push(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+    sender_local_locked lock() { return q.lock(); }
+
+    template <typename RefType = void, typename Message, typename Yield>
+    self const & send(Message && msg, Yield && yield) const {
+        if (auto p = q.lock()) {
+            p->push(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+            yield();
+        }
+        return *this;
     }
-    return *this;
-  }
 
-  const self & transmit(util::pmte::unique_pmte_value msg) const override {
-    if (auto p = q.lock()) {
-      p->push(std::move(msg));
+    template <typename RefType = void, typename Message, typename Yield>
+    self const & send(std::pmr::memory_resource & resource, Message && msg, Yield && yield) const {
+        if (auto p = q.lock()) {
+            p->push(util::pmte::make_unique_pmte<RefType>(resource, std::forward<Message>(msg)));
+            yield();
+        }
+        return *this;
     }
-    return *this;
-  }
 
-  NO_DISCARD explicit operator bool() const noexcept override { return q.lock().operator bool(); }
+    template <typename RefType = void, typename Message>
+    self const & send(Message && msg) const {
+        if (auto p = q.lock()) {
+            p->push(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+        }
+        return *this;
+    }
 
-  inline self & then() & noexcept(true) { return *this; }
+    template <typename RefType = void, typename Message>
+    self const & send(std::pmr::memory_resource & resource, Message && msg) const {
+        if (auto p = q.lock()) {
+            p->push(util::pmte::make_unique_pmte<RefType>(resource, std::forward<Message>(msg)));
+        }
+        return *this;
+    }
 
-  inline const self & then() const & noexcept(true) { return *this; }
+    self const & transmit(util::pmte::unique_pmte_value msg) const override {
+        if (auto p = q.lock()) {
+            p->push(std::move(msg));
+        }
+        return *this;
+    }
 
-  inline self && then() && noexcept(true) { return std::move(*this); }
+    NO_DISCARD explicit operator bool() const noexcept override { return q.lock().operator bool(); }
 
-  inline const self && then() const && noexcept(true) { return std::move(*this); }
+#if __cplusplus >= CPP20_STANDARD
+    self & wait() & noexcept(true) {
+        if (auto p = q.lock()) {
+            p->wait();
+        }
+        return *this;
+    }
 
-  self & then(std::function<void()> f) & {
-    if (q.lock()) f();
-    return *this;
-  }
+    self const & wait() const & noexcept(true) {
+        if (auto p = q.lock()) {
+            p->wait();
+        }
+        return *this;
+    }
 
-  const self & then(std::function<void()> f) const & {
-    if (q.lock()) f();
-    return *this;
-  }
+    self && wait() && noexcept(true) {
+        if (auto p = q.lock()) {
+            p->wait();
+        }
+        return std::move(*this);
+    }
 
-  self && then(std::function<void()> f) && {
-    if (q.lock()) f();
-    return std::move(*this);
-  }
+    self const && wait() const && noexcept(true) {
+        if (auto p = q.lock()) {
+            p->wait();
+        }
+        return std::move(*this);
+    }
+#endif
 
-  const self && then(std::function<void()> f) const && {
-    if (q.lock()) f();
-    return std::move(*this);
-  }
+    inline self & then() & noexcept(true) { return *this; }
 
-  self & then(std::function<void(self &)> f) & {
-    if (q.lock()) f(std::forward<self &>(*this));
-    return *this;
-  }
+    inline self const & then() const & noexcept(true) { return *this; }
 
-  const self & then(std::function<void(const self &)> f) const & {
-    if (q.lock()) f(*this);
-    return *this;
-  }
+    inline self && then() && noexcept(true) { return std::move(*this); }
 
-  self && then(std::function<void(self &&)> f) && {
-    if (q.lock()) f(std::forward<self &&>(*this));
-    return std::move(*this);
-  }
+    inline self const && then() const && noexcept(true) { return std::move(*this); }
 
-  const self && then(std::function<void(const self &&)> f) const && {
-    if (q.lock()) f(std::forward<const self &&>(*this));
-    return std::move(*this);
-  }
+    self & then(std::function<void()> f) & {
+        if (q.lock()) f();
+        return *this;
+    }
 
-  self & or_else(std::function<void()> f) & {
-    if (not q.lock()) f();
-    return *this;
-  }
+    self const & then(std::function<void()> f) const & {
+        if (q.lock()) f();
+        return *this;
+    }
 
-  const self & or_else(std::function<void()> f) const & {
-    if (not q.lock()) f();
-    return *this;
-  }
+    self && then(std::function<void()> f) && {
+        if (q.lock()) f();
+        return std::move(*this);
+    }
 
-  self && or_else(std::function<void()> f) && {
-    if (not q.lock()) f();
-    return std::move(*this);
-  }
+    self const && then(std::function<void()> f) const && {
+        if (q.lock()) f();
+        return std::move(*this);
+    }
 
-  const self && or_else(std::function<void()> f) const && {
-    if (not q.lock()) f();
-    return std::move(*this);
-  }
+    self & then(std::function<void(self &)> f) & {
+        if (q.lock()) f(std::forward<self &>(*this));
+        return *this;
+    }
 
-  self & or_else(std::function<void(self &)> f) & {
-    if (not q.lock()) f(*this);
-    return *this;
-  }
+    self const & then(std::function<void(self const &)> f) const & {
+        if (q.lock()) f(*this);
+        return *this;
+    }
 
-  const self & or_else(std::function<void(const self &)> f) const & {
-    if (not q.lock()) f(*this);
-    return *this;
-  }
+    self && then(std::function<void(self &&)> f) && {
+        if (q.lock()) f(std::forward<self &&>(*this));
+        return std::move(*this);
+    }
 
-  self && or_else(std::function<void(self &&)> f) && {
-    if (not q.lock()) f(std::forward<self &&>(*this));
-    return std::move(*this);
-  }
+    self const && then(std::function<void(self const &&)> f) const && {
+        if (q.lock()) f(std::forward<const self &&>(*this));
+        return std::move(*this);
+    }
 
-  const self && or_else(std::function<void(const self &&)> f) const && {
-    if (not q.lock()) f(std::forward<const self &&>(*this));
-    return std::move(*this);
-  }
+    self & or_else(std::function<void()> f) & {
+        if (not q.lock()) f();
+        return *this;
+    }
 
-  template <typename Exception = std::runtime_error>
-  self & or_throw(Exception exception = Exception("sender is null")) & noexcept(false) {
-    if (not q.lock()) throw exception;
-    return *this;
-  }
+    self const & or_else(std::function<void()> f) const & {
+        if (not q.lock()) f();
+        return *this;
+    }
 
-  template <typename Exception = std::runtime_error>
-  const self & or_throw(Exception exception = Exception("sender is null")) const & noexcept(false) {
-    if (not q.lock()) throw exception;
-    return *this;
-  }
+    self && or_else(std::function<void()> f) && {
+        if (not q.lock()) f();
+        return std::move(*this);
+    }
 
-  template <typename Exception = std::runtime_error>
-  self && or_throw(Exception exception = Exception("sender is null")) && noexcept(false) {
-    if (not q.lock()) throw exception;
-    return std::move(*this);
-  }
+    self const && or_else(std::function<void()> f) const && {
+        if (not q.lock()) f();
+        return std::move(*this);
+    }
 
-  template <typename Exception = std::runtime_error>
-  const self && or_throw(Exception exception = Exception("sender is null")) const && noexcept(false) {
-    if (not q.lock()) throw exception;
-    return std::move(*this);
-  }
+    self & or_else(std::function<void(self &)> f) & {
+        if (not q.lock()) f(*this);
+        return *this;
+    }
 
-  self & or_throw(const char * const text) & noexcept(false) {
-    if (not q.lock()) throw std::runtime_error(text);
-    return *this;
-  }
+    self const & or_else(std::function<void(self const &)> f) const & {
+        if (not q.lock()) f(*this);
+        return *this;
+    }
 
-  const self & or_throw(const char * const text) const & noexcept(false) {
-    if (not q.lock()) throw std::runtime_error(text);
-    return *this;
-  }
+    self && or_else(std::function<void(self &&)> f) && {
+        if (not q.lock()) f(std::forward<self &&>(*this));
+        return std::move(*this);
+    }
 
-  self && or_throw(const char * const text) && noexcept(false) {
-    if (not q.lock()) throw std::runtime_error(text);
-    return std::move(*this);
-  }
+    self const && or_else(std::function<void(self const &&)> f) const && {
+        if (not q.lock()) f(std::forward<self const &&>(*this));
+        return std::move(*this);
+    }
 
-  const self && or_throw(const char * const text) const && noexcept(false) {
-    if (not q.lock()) throw std::runtime_error(text);
-    return std::move(*this);
-  }
+    template <typename Exception = std::runtime_error>
+    self & or_throw(Exception exception = Exception("sender is null")) & noexcept(false) {
+        if (not q.lock()) throw exception;
+        return *this;
+    }
+
+    template <typename Exception = std::runtime_error>
+    self const & or_throw(Exception exception = Exception("sender is null")) const & noexcept(false) {
+        if (not q.lock()) throw exception;
+        return *this;
+    }
+
+    template <typename Exception = std::runtime_error>
+    self && or_throw(Exception exception = Exception("sender is null")) && noexcept(false) {
+        if (not q.lock()) throw exception;
+        return std::move(*this);
+    }
+
+    template <typename Exception = std::runtime_error>
+    self const && or_throw(Exception exception = Exception("sender is null")) const && noexcept(false) {
+        if (not q.lock()) throw exception;
+        return std::move(*this);
+    }
+
+    self & or_throw(char const * const text) & noexcept(false) {
+        if (not q.lock()) throw std::runtime_error(text);
+        return *this;
+    }
+
+    self const & or_throw(char const * const text) const & noexcept(false) {
+        if (not q.lock()) throw std::runtime_error(text);
+        return *this;
+    }
+
+    self && or_throw(char const * const text) && noexcept(false) {
+        if (not q.lock()) throw std::runtime_error(text);
+        return std::move(*this);
+    }
+
+    self const && or_throw(char const * const text) const && noexcept(false) {
+        if (not q.lock()) throw std::runtime_error(text);
+        return std::move(*this);
+    }
 };
 
 class sender final : public sender_interface {
-public:
-  using self = sender;
+  public:
+    using self = sender;
 
-  template <typename Sender>
-  sender(Sender sender__) {
-    sender_ = std::shared_ptr<Sender>(new Sender(std::move(sender__)));
-  }
-
-  sender() noexcept = default;
-  ~sender() noexcept = default;
-  sender(self &&) noexcept = default;
-  sender(const self &) noexcept = default;
-  self & operator=(self &&) noexcept = default;
-  self & operator=(const self &) noexcept = default;
-
-  NO_DISCARD explicit operator bool() const noexcept override { return sender_ ? sender_->operator bool() : false; }
-
-  NO_DISCARD std::size_t hash() const override { return sender_ ? sender_->hash() : 0; }
-
-  template <typename RefType = void, typename Message, typename... Args>
-  const self & send(Message && msg, Args &&... args) const {
-    if (sender_) {
-      sender_->transmit(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
-      for_each_arg([](auto && arg) { arg(); }, args...);
+    template <typename Sender>
+    sender(Sender sender__) {
+        sender_ = std::shared_ptr<Sender>(new Sender(std::move(sender__)));
     }
-    return *this;
-  }
 
-  template <typename RefType = void, typename Message>
-  const self & send(Message && msg) const {
-    if (sender_) sender_->transmit(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
-    return *this;
-  }
+    sender() noexcept = default;
+    ~sender() noexcept = default;
+    sender(self &&) noexcept = default;
+    sender(self const &) noexcept = default;
+    self & operator=(self &&) noexcept = default;
+    self & operator=(self const &) noexcept = default;
 
-  const self & transmit(util::pmte::unique_pmte_value msg) const override {
-    if (sender_) sender_->transmit(std::move(msg));
-    return *this;
-  }
+    NO_DISCARD explicit operator bool() const noexcept override { return sender_ ? sender_->operator bool() : false; }
 
-  inline self & then() & noexcept(true) { return *this; }
+    NO_DISCARD std::size_t hash() const override { return sender_ ? sender_->hash() : 0; }
 
-  inline const self & then() const & noexcept(true) { return *this; }
+    template <typename RefType = void, typename Message, typename Yield>
+    self const & send(Message && msg, Yield && yield) const {
+        if (sender_) {
+            sender_->transmit(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+            yield();
+        }
+        return *this;
+    }
 
-  inline self && then() && noexcept(true) { return std::move(*this); }
+    template <typename RefType = void, typename Message, typename Yield>
+    self const & send(std::pmr::memory_resource & resource, Message && msg, Yield && yield) const {
+        if (sender_) {
+            sender_->transmit(util::pmte::make_unique_pmte<RefType>(resource, std::forward<Message>(msg)));
+            yield();
+        }
+        return *this;
+    }
 
-  inline const self && then() const && noexcept(true) { return std::move(*this); }
+    template <typename RefType = void, typename Message>
+    self const & send(Message && msg) const {
+        if (sender_) sender_->transmit(util::pmte::make_unique_pmte<RefType>(std::forward<Message>(msg)));
+        return *this;
+    }
 
-  self & then(std::function<void()> f) & {
-    if (operator bool()) f();
-    return *this;
-  }
+    template <typename RefType = void, typename Message>
+    self const & send(std::pmr::memory_resource & resource, Message && msg) const {
+        if (sender_) sender_->transmit(util::pmte::make_unique_pmte<RefType>(resource, std::forward<Message>(msg)));
+        return *this;
+    }
 
-  const self & then(std::function<void()> f) const & {
-    if (operator bool()) f();
-    return *this;
-  }
+    self const & transmit(util::pmte::unique_pmte_value msg) const override {
+        if (sender_) sender_->transmit(std::move(msg));
+        return *this;
+    }
 
-  self && then(std::function<void()> f) && {
-    if (operator bool()) f();
-    return std::move(*this);
-  }
+    inline self & then() & noexcept(true) { return *this; }
 
-  const self && then(std::function<void()> f) const && {
-    if (operator bool()) f();
-    return std::move(*this);
-  }
+    inline self const & then() const & noexcept(true) { return *this; }
 
-  self & then(std::function<void(self &)> f) & {
-    if (operator bool()) f(std::forward<self &>(*this));
-    return *this;
-  }
+    inline self && then() && noexcept(true) { return std::move(*this); }
 
-  const self & then(std::function<void(const self &)> f) const & {
-    if (operator bool()) f(*this);
-    return *this;
-  }
+    inline self const && then() const && noexcept(true) { return std::move(*this); }
 
-  self && then(std::function<void(self &&)> f) && {
-    if (operator bool()) f(std::forward<self &&>(*this));
-    return std::move(*this);
-  }
+    self & then(std::function<void()> f) & {
+        if (operator bool()) f();
+        return *this;
+    }
 
-  const self && then(std::function<void(const self &&)> f) const && {
-    if (operator bool()) f(std::forward<const self &&>(*this));
-    return std::move(*this);
-  }
+    self const & then(std::function<void()> f) const & {
+        if (operator bool()) f();
+        return *this;
+    }
 
-  self & or_else(std::function<void()> f) & {
-    if (not operator bool()) f();
-    return *this;
-  }
+    self && then(std::function<void()> f) && {
+        if (operator bool()) f();
+        return std::move(*this);
+    }
 
-  const self & or_else(std::function<void()> f) const & {
-    if (not operator bool()) f();
-    return *this;
-  }
+    self const && then(std::function<void()> f) const && {
+        if (operator bool()) f();
+        return std::move(*this);
+    }
 
-  self && or_else(std::function<void()> f) && {
-    if (not operator bool()) f();
-    return std::move(*this);
-  }
+    self & then(std::function<void(self &)> f) & {
+        if (operator bool()) f(std::forward<self &>(*this));
+        return *this;
+    }
 
-  const self && or_else(std::function<void()> f) const && {
-    if (not operator bool()) f();
-    return std::move(*this);
-  }
+    self const & then(std::function<void(self const &)> f) const & {
+        if (operator bool()) f(*this);
+        return *this;
+    }
 
-  self & or_else(std::function<void(self &)> f) & {
-    if (not operator bool()) f(*this);
-    return *this;
-  }
+    self && then(std::function<void(self &&)> f) && {
+        if (operator bool()) f(std::forward<self &&>(*this));
+        return std::move(*this);
+    }
 
-  const self & or_else(std::function<void(const self &)> f) const & {
-    if (not operator bool()) f(*this);
-    return *this;
-  }
+    self const && then(std::function<void(self const &&)> f) const && {
+        if (operator bool()) f(std::forward<self const &&>(*this));
+        return std::move(*this);
+    }
 
-  self && or_else(std::function<void(self &&)> f) && {
-    if (not operator bool()) f(std::forward<self &&>(*this));
-    return std::move(*this);
-  }
+    self & or_else(std::function<void()> f) & {
+        if (not operator bool()) f();
+        return *this;
+    }
 
-  const self && or_else(std::function<void(const self &&)> f) const && {
-    if (not operator bool()) f(std::forward<const self &&>(*this));
-    return std::move(*this);
-  }
+    self const & or_else(std::function<void()> f) const & {
+        if (not operator bool()) f();
+        return *this;
+    }
 
-  template <typename Exception = std::runtime_error>
-  self & or_throw(Exception exception = Exception("sender is null")) & noexcept(false) {
-    if (not operator bool()) throw exception;
-    return *this;
-  }
+    self && or_else(std::function<void()> f) && {
+        if (not operator bool()) f();
+        return std::move(*this);
+    }
 
-  template <typename Exception = std::runtime_error>
-  const self & or_throw(Exception exception = Exception("sender is null")) const & noexcept(false) {
-    if (not operator bool()) throw exception;
-    return *this;
-  }
+    self const && or_else(std::function<void()> f) const && {
+        if (not operator bool()) f();
+        return std::move(*this);
+    }
 
-  template <typename Exception = std::runtime_error>
-  self && or_throw(Exception exception = Exception("sender is null")) && noexcept(false) {
-    if (not operator bool()) throw exception;
-    return std::move(*this);
-  }
+    self & or_else(std::function<void(self &)> f) & {
+        if (not operator bool()) f(*this);
+        return *this;
+    }
 
-  template <typename Exception = std::runtime_error>
-  const self && or_throw(Exception exception = Exception("sender is null")) const && noexcept(false) {
-    if (not operator bool()) throw exception;
-    return std::move(*this);
-  }
+    self const & or_else(std::function<void(self const &)> f) const & {
+        if (not operator bool()) f(*this);
+        return *this;
+    }
 
-  self & or_throw(const char * const text) & noexcept(false) {
-    if (not operator bool()) throw std::runtime_error(text);
-    return *this;
-  }
+    self && or_else(std::function<void(self &&)> f) && {
+        if (not operator bool()) f(std::forward<self &&>(*this));
+        return std::move(*this);
+    }
 
-  const self & or_throw(const char * const text) const & noexcept(false) {
-    if (not operator bool()) throw std::runtime_error(text);
-    return *this;
-  }
+    self const && or_else(std::function<void(self const &&)> f) const && {
+        if (not operator bool()) f(std::forward<self const &&>(*this));
+        return std::move(*this);
+    }
 
-  self && or_throw(const char * const text) && noexcept(false) {
-    if (not operator bool()) throw std::runtime_error(text);
-    return std::move(*this);
-  }
+    template <typename Exception = std::runtime_error>
+    self & or_throw(Exception exception = Exception("sender is null")) & noexcept(false) {
+        if (not operator bool()) throw exception;
+        return *this;
+    }
 
-  const self && or_throw(const char * const text) const && noexcept(false) {
-    if (not operator bool()) throw std::runtime_error(text);
-    return std::move(*this);
-  }
+    template <typename Exception = std::runtime_error>
+    self const & or_throw(Exception exception = Exception("sender is null")) const & noexcept(false) {
+        if (not operator bool()) throw exception;
+        return *this;
+    }
 
-  bool operator==(sender const & other) {
-    const std::size_t hash1 = sender_ ? sender_->hash() : 0;
-    const std::size_t hash2 = other.sender_ ? other.sender_->hash() : 0;
-    return sender_.get() == other.sender_.get() or hash1 == hash2;
-  }
+    template <typename Exception = std::runtime_error>
+    self && or_throw(Exception exception = Exception("sender is null")) && noexcept(false) {
+        if (not operator bool()) throw exception;
+        return std::move(*this);
+    }
 
-  std::ostream & print(std::ostream & out) const override { return sender_ ? sender_->print(out) : out; }
+    template <typename Exception = std::runtime_error>
+    self const && or_throw(Exception exception = Exception("sender is null")) const && noexcept(false) {
+        if (not operator bool()) throw exception;
+        return std::move(*this);
+    }
 
-private:
+    self & or_throw(char const * const text) & noexcept(false) {
+        if (not operator bool()) throw std::runtime_error(text);
+        return *this;
+    }
 
-  std::shared_ptr<sender_interface> sender_;
+    self const & or_throw(char const * const text) const & noexcept(false) {
+        if (not operator bool()) throw std::runtime_error(text);
+        return *this;
+    }
+
+    self && or_throw(char const * const text) && noexcept(false) {
+        if (not operator bool()) throw std::runtime_error(text);
+        return std::move(*this);
+    }
+
+    self const && or_throw(char const * const text) const && noexcept(false) {
+        if (not operator bool()) throw std::runtime_error(text);
+        return std::move(*this);
+    }
+
+    bool operator==(sender const & other) {
+        const std::size_t hash1 = sender_ ? sender_->hash() : 0;
+        const std::size_t hash2 = other.sender_ ? other.sender_->hash() : 0;
+        return sender_.get() == other.sender_.get() or hash1 == hash2;
+    }
+
+    std::ostream & print(std::ostream & out) const override { return sender_ ? sender_->print(out) : out; }
+
+  private:
+
+    std::shared_ptr<sender_interface> sender_;
 };
 
 } // namespace messaging
