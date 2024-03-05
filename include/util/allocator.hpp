@@ -112,15 +112,16 @@ std::ostream & operator<<(std::ostream &, const memory_resource_counter &);
  * 
  * @tparam T 
  */
-template <typename T>
+template <typename T = std::pmr::memory_resource>
 class pmr_allocator final {
   using allocator_type = std::shared_ptr<T>;
 
   allocator_type allocator;
   inline static allocator_type static_allocator;
 
-  static void prepare() {
-    if (not static_allocator) static_allocator = std::make_shared<T>();
+  template <typename ... Args>
+  static void prepare(Args && ... args) {
+    if (not static_allocator) static_allocator = std::make_shared<T>(std::forward<Args>(args)...);
   }
 
   static void destroy() {
@@ -135,8 +136,9 @@ class pmr_allocator final {
 
 public:
 
-  pmr_allocator() {
-    prepare();
+  template <typename ... Args>
+  pmr_allocator(Args && ... args) {
+    prepare(std::forward<Args>(args)...);
     allocator = static_allocator;
   }
   pmr_allocator(pmr_allocator &&) noexcept = default;
@@ -148,7 +150,7 @@ public:
     destroy();
   };
 
-  [[nodiscard]] inline static void * allocate(std::size_t bytes, std::size_t alignment) {
+  [[nodiscard]] inline static void * allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t)) {
 #ifndef NDEBUG
     ++m_allocations;
     m_allocated_memory += bytes;
@@ -178,6 +180,13 @@ public:
   std::size_t deallocations() const { return m_deallocations; }
   std::size_t allocated_memory() const { return m_allocated_memory; }
 #endif
+
+  friend std::ostream& operator<<(std::ostream & out, pmr_allocator<T> const & o) {
+    return out << ANSI_TOK "{" ANSI_LBL "allocated_memory" ANSI_TOK ":" ANSI_NRM << o.allocated_memory()
+               << ANSI_TOK "," ANSI_LBL "allocations" ANSI_TOK ":" ANSI_NRM << o.allocations()
+               << ANSI_TOK "," ANSI_LBL "deallocations" ANSI_TOK ":" ANSI_NRM << o.deallocations()
+               << ANSI_TOK "}";
+  }
 };
 
 //! @brief Default unsynchronized allocator proxy.
@@ -201,6 +210,8 @@ public:
   using proxy_allocator = PA;
 
   constexpr allocator() noexcept(noexcept(PA())) {}
+  template <typename ... PA_Args>
+  constexpr allocator(PA_Args && ... pa_args) : pa(std::forward<PA_Args>(pa_args)...) {}
   constexpr allocator(allocator &&) noexcept = default;
   constexpr allocator(const allocator &) noexcept = default;
   template <class U>
