@@ -52,22 +52,22 @@
 struct termios term_settings;
 
 void RestoreKeyboardBlocking(struct termios * initial_settings) {
-  tcsetattr(0, TCSANOW, initial_settings);
+    tcsetattr(0, TCSANOW, initial_settings);
 }
 
 void SetKeyboardNonBlock(struct termios * initial_settings) {
 
-  struct termios new_settings;
-  tcgetattr(0, initial_settings);
+    struct termios new_settings;
+    tcgetattr(0, initial_settings);
 
-  new_settings = *initial_settings;
-  new_settings.c_lflag &= ~ICANON;
-  new_settings.c_lflag &= ~ECHO;
-  new_settings.c_lflag &= ~ISIG;
-  new_settings.c_cc[VMIN] = 0;
-  new_settings.c_cc[VTIME] = 0;
+    new_settings = *initial_settings;
+    new_settings.c_lflag &= ~ICANON;
+    new_settings.c_lflag &= ~ECHO;
+    new_settings.c_lflag &= ~ISIG;
+    new_settings.c_cc[VMIN] = 0;
+    new_settings.c_cc[VTIME] = 0;
 
-  tcsetattr(0, TCSANOW, &new_settings);
+    tcsetattr(0, TCSANOW, &new_settings);
 }
 
 //=============================================================================
@@ -76,23 +76,22 @@ namespace factory {
 
 template <typename Types, typename T = bank_machine<typename Types::process_type>, typename... Args>
 auto create_bank_machine(Args &&... args) {
-  return std::make_shared<T>(std::forward<Args>(args)...);
+    return std::make_shared<T>(std::forward<Args>(args)...);
 }
 
 template <typename Types, typename T = interface_machine<typename Types::process_type>, typename... Args>
 auto create_interface_machine(Args &&... args) {
-  return std::make_shared<T>(std::forward<Args>(args)...);
+    return std::make_shared<T>(std::forward<Args>(args)...);
 }
 
-template <typename Types, typename BankSender, typename InterfaceSender,
-  typename T = atm<typename Types::process_type, BankSender, InterfaceSender>, typename... Args>
+template <typename Types, typename BankSender, typename InterfaceSender, typename T = atm<typename Types::process_type, BankSender, InterfaceSender>, typename... Args>
 auto create_atm(BankSender bank_sender, InterfaceSender interface_sender, Args &&... args) {
-  return std::make_shared<T>(bank_sender, interface_sender, std::forward<Args>(args)...);
+    return std::make_shared<T>(bank_sender, interface_sender, std::forward<Args>(args)...);
 }
 
 template <typename Types, typename T = logger<typename Types::process_type>, typename... Args>
 auto create_logger(Args &&... args) {
-  return std::make_shared<T>(std::forward<Args>(args)...);
+    return std::make_shared<T>(std::forward<Args>(args)...);
 }
 
 }; // namespace factory
@@ -101,54 +100,55 @@ auto create_logger(Args &&... args) {
 
 static void init_debug_streams() __attribute__((constructor));
 static void init_debug_streams() {
-  using namespace util::logger;
-  for (auto && stream : std::vector<costream *> {&info, &debug, &trace, &warning, &error, &stats}) {
-    stream->enable(true);
-    stream->show_thread(true);
-    stream->show_linenumber(true);
-    stream->show_module(true);
-    stream->show_time(true);
-  }
+    using namespace util::logger;
+    for (auto && stream : std::vector<costream *> {&info, &debug, &trace, &warning, &error, &stats}) {
+        stream->enable(true);
+        stream->show_thread(true);
+        stream->show_linenumber(true);
+        stream->show_module(true);
+        stream->show_time(true);
+    }
 }
 
 //=============================================================================
 
 class application {
-public:
+  public:
 
-  using multithread_types = messaging::multithread::std_thread_types;
-  using multithread_types_broadcast = messaging::multithread::std_thread_types_broadcast;
+    using multithread_types = messaging::multithread::std_thread_types;
+    using multithread_types_broadcast = messaging::multithread::std_thread_types_broadcast;
 
 #ifdef WITH_BOOST_COROUTINES
-  using coroutine_types = messaging::coroutine::boost_coroutine2_types;
-  using coroutine_types_broadcast = messaging::coroutine::boost_coroutine2_types_broadcast;
+    using coroutine_types = messaging::coroutine::boost_coroutine2_types;
+    using coroutine_types_broadcast = messaging::coroutine::boost_coroutine2_types_broadcast;
 #endif
 
-  void run() {
-    //* Push coroutines forward and wait until all processes are finished
-    using namespace std::chrono_literals;
-    manager.run_every(100ms);
-  }
+    void run() {
+        //* Push coroutines forward and wait until all processes are finished
+        using namespace std::chrono_literals;
+        manager.run_every(100ms);
+    }
 
-private:
-  messaging::process_manager<
+  private:
+    messaging::process_manager<
 #ifdef WITH_BOOST_COROUTINES
-    coroutine_types, coroutine_types_broadcast,
+      coroutine_types, coroutine_types_broadcast,
 #endif
-    multithread_types, multithread_types_broadcast> manager;
+      multithread_types, multithread_types_broadcast>
+      manager;
 };
 
 namespace std {
 std::ostream & operator<<(std::ostream & out, std::vector<std::string> const & o) {
-  bool comma = false;
-  out << '{';
-  for (auto && e : o) {
-    if (comma) out << ',';
-    comma = true;
-    out << e;
-  }
-  out << '}';
-  return out;
+    bool comma = false;
+    out << '{';
+    for (auto && e : o) {
+        if (comma) out << ',';
+        comma = true;
+        out << e;
+    }
+    out << '}';
+    return out;
 }
 } // namespace std
 
@@ -156,103 +156,101 @@ std::ostream & operator<<(std::ostream & out, std::vector<std::string> const & o
 
 int main() {
 #ifdef WITH_BOOST_COROUTINES
-  using multithread_types = messaging::multithread::std_thread_types;
-  using multithread_types_broadcast = messaging::multithread::std_thread_types_broadcast;
+    using multithread_types = messaging::multithread::std_thread_types;
+    using multithread_types_broadcast = messaging::multithread::std_thread_types_broadcast;
 
-  using coroutine_types = messaging::coroutine::boost_coroutine2_types;
-  using coroutine_types_broadcast = messaging::coroutine::boost_coroutine2_types_broadcast;
+    using coroutine_types = messaging::coroutine::boost_coroutine2_types;
+    using coroutine_types_broadcast = messaging::coroutine::boost_coroutine2_types_broadcast;
 
-  using process_type_logger = coroutine_types;
-  using process_type_bank = multithread_types_broadcast;
-  using process_type_interface = coroutine_types;
-  using process_type_atm = multithread_types;
-  using function_type_main = coroutine_types;
+    using process_type_logger = coroutine_types;
+    using process_type_bank = multithread_types_broadcast;
+    using process_type_interface = coroutine_types;
+    using process_type_atm = multithread_types;
+    using function_type_main = coroutine_types;
 
-  messaging::process_manager<coroutine_types, multithread_types, coroutine_types_broadcast, multithread_types_broadcast> manager;
+    messaging::process_manager<coroutine_types, multithread_types, coroutine_types_broadcast, multithread_types_broadcast> manager;
 #else
-  using multithread_types = messaging::multithread::std_thread_types;
-  using multithread_types_broadcast = messaging::multithread::std_thread_types_broadcast;
+    using multithread_types = messaging::multithread::std_thread_types;
+    using multithread_types_broadcast = messaging::multithread::std_thread_types_broadcast;
 
-  using process_type_logger = multithread_types;
-  using process_type_bank = multithread_types_broadcast;
-  using process_type_interface = multithread_types;
-  using process_type_atm = multithread_types;
-  using function_type_main = multithread_types;
+    using process_type_logger = multithread_types;
+    using process_type_bank = multithread_types_broadcast;
+    using process_type_interface = multithread_types;
+    using process_type_atm = multithread_types;
+    using function_type_main = multithread_types;
 
-  messaging::process_manager<multithread_types, multithread_types_broadcast> manager;
+    messaging::process_manager<multithread_types, multithread_types_broadcast> manager;
 #endif
 
-  manager.add<process_type_logger>("logger", factory::create_logger<process_type_logger>())->send(std::string("Logging started"));
+    manager.add<process_type_logger>("logger", factory::create_logger<process_type_logger>())->send(std::string("Logging started"));
 
-  messaging::process bank = manager.emplace_process<process_type_bank, bank_machine>("bank", false);
-  bank.attach_observer(manager.get_sender("logger"))
-    .on_start([] { std::cout << "Welcome to the bank." << std::endl; })
-    .on_finish([] { std::cout << "The bank is now closed!" << std::endl; })
-    .on_exception([](auto & process, std::exception_ptr e) {
-      std::cerr << "Exception caught in system (" << process.template name<std::string>() << ")!" << std::endl;
-      std::rethrow_exception(e);
-    });
-  assert(manager.start("bank"));
+    messaging::process bank = manager.emplace_process<process_type_bank, bank_machine>("bank", false);
+    bank.attach_observer(manager.get_sender("logger"))
+      .on_start([] { std::cout << "Welcome to the bank." << std::endl; })
+      .on_finish([] { std::cout << "The bank is now closed!" << std::endl; })
+      .on_exception([](auto & process, std::exception_ptr e) {
+          std::cerr << "Exception caught in system (" << process.template name<std::string>() << ")!" << std::endl;
+          std::rethrow_exception(e);
+      });
+    assert(manager.start("bank"));
 
-  manager.emplace_process<process_type_interface, interface_machine>("interface")->handle([](std::string message) {
-    std::cout << message << std::endl;
-  });
+    manager.emplace_process<process_type_interface, interface_machine>("interface")->handle([](std::string message) { std::cout << message << std::endl; });
 
 #if 1
-  manager.add<process_type_atm>("atm",
-    factory::create_atm<process_type_atm>(manager.get_sender<process_type_bank>("bank").or_throw(std::runtime_error("Bank process not found!")),
-      manager.get_sender<process_type_interface>("interface").or_throw("Interface process not found!")));
+    manager.add<process_type_atm>("atm",
+      factory::create_atm<process_type_atm>(manager.get_sender<process_type_bank>("bank").or_throw(std::runtime_error("Bank process not found!")),
+        manager.get_sender<process_type_interface>("interface").or_throw("Interface process not found!")));
 #else
-  manager.emplace_process<process_type_atm, atm<process_type_atm::process_type, process_type_bank::sender_type, process_type_interface::sender_type>>(
-    "atm", manager.get_sender<process_type_bank>("bank").or_throw(std::runtime_error("Bank process not found!")),
-    manager.get_sender<process_type_interface>("interface").or_throw("Interface process not found!"));
+    manager.emplace_process<process_type_atm, atm<process_type_atm::process_type, process_type_bank::sender_type, process_type_interface::sender_type>>("atm",
+      manager.get_sender<process_type_bank>("bank").or_throw(std::runtime_error("Bank process not found!")),
+      manager.get_sender<process_type_interface>("interface").or_throw("Interface process not found!"));
 #endif
 
-  manager.add<function_type_main>("main", [&](messaging::stop_token token, function_type_main::yield_type & yield) {
-    messaging::sender atmqueue(manager.get_sender("atm").or_else([] { throw std::runtime_error("No ATM found!"); }));
-    messaging::sender interface(manager.get_sender("interface").or_throw());
-    bool quit_pressed = false;
+    manager.add<function_type_main>("main", [&](messaging::stop_token token, function_type_main::yield_type & yield) {
+        messaging::sender atmqueue(manager.get_sender("atm").or_else([] { throw std::runtime_error("No ATM found!"); }));
+        messaging::sender interface(manager.get_sender("interface").or_throw());
+        bool quit_pressed = false;
 
-    SetKeyboardNonBlock(&term_settings);
+        SetKeyboardNonBlock(&term_settings);
 
-    while (!quit_pressed and !token.stop_requested()) {
-      yield();
+        while (!quit_pressed and !token.stop_requested()) {
+            yield();
 
-      char buf[2];
-      int l = read(STDIN_FILENO, buf, 1); // Non-blocking read
-      if (l > 0) {
-        char c = buf[0];
-        switch (c) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9': atmqueue.send(digit_pressed(c), yield); break;
-        case 'b': atmqueue.send(balance_pressed(), yield); break;
-        case 'w': atmqueue.send(withdraw_pressed(50), yield); break;
-        case 'c': atmqueue.send(cancel_pressed(), yield); break;
-        case 'q':
-          interface.send(std::string("Bye bye"), yield);
-          quit_pressed = true;
-          break;
-        case 'i': atmqueue.send(card_inserted("acc1234"), yield); break;
+            char buf[2];
+            int l = read(STDIN_FILENO, buf, 1); // Non-blocking read
+            if (l > 0) {
+                char c = buf[0];
+                switch (c) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9': atmqueue.send(digit_pressed(c), yield); break;
+                case 'b': atmqueue.send(balance_pressed(), yield); break;
+                case 'w': atmqueue.send(withdraw_pressed(50), yield); break;
+                case 'c': atmqueue.send(cancel_pressed(), yield); break;
+                case 'q':
+                    interface.send(std::string("Bye bye"), yield);
+                    quit_pressed = true;
+                    break;
+                case 'i': atmqueue.send(card_inserted("acc1234"), yield); break;
+                }
+            }
         }
-      }
-    }
 
-    RestoreKeyboardBlocking(&term_settings);
+        RestoreKeyboardBlocking(&term_settings);
 
-    manager.done(yield);
-  });
+        manager.done(yield);
+    });
 
-  //* Push coroutines forward and wait until all processes are finished
-  using namespace std::chrono_literals;
-  manager.run_every(100ms);
+    //* Push coroutines forward and wait until all processes are finished
+    using namespace std::chrono_literals;
+    manager.run_every(100ms);
 
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
