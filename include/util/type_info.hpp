@@ -55,7 +55,7 @@ namespace util {
 struct type_base;
 
 /**
- * Trait information of the payload type.
+ * Trait information of a designated type.
  */
 struct trait_info final {
   const std::size_t hash_code;
