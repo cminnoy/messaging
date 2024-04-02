@@ -202,6 +202,7 @@ _ISEMPTY(                                                                       
   return elem;
 
 #define TRACER_COMPONENT_RETURN(...)                                            \
+  namespace logger = ::util::logger;                                            \
   BOOST_PP_IF(                                                                  \
     ISEMPTY(__VA_ARGS__),                                                       \
     __TRACER_FUNC_SIMPLE_RETURN(),                                              \
