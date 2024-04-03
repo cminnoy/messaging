@@ -59,7 +59,9 @@ static_assert(__cplusplus >= CPP14_STANDARD, "Minimum required standard is C++14
 namespace util {
 namespace logger {
 
-#define TRACER_MODULE_NAME "global"
+#ifndef TRACER_MODULE_NAME
+# define TRACER_MODULE_NAME "global"
+#endif
 
 #define TRACER_MODULE(name, banner_text)                                        \
   namespace {                                                                   \
@@ -97,7 +99,7 @@ _ISEMPTY(                                                                       
 #define _IS_EMPTY_CASE_0001 ,
 
 #define __TRACER_FUNC_PRINT_ARG_IMP(r, elem)                                    \
-  (logger::costream&)__tracer__ << '\n';                                        \
+  (logger::costream&)__tracer__ << "\n";                                        \
   ((logger::costream&)__tracer__).indent();                                     \
   (logger::costream&)__tracer__                                                 \
     << ANSI_FG_YELLOW ">>> "                                                    \

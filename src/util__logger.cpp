@@ -191,7 +191,7 @@ protected:
       module_enabled = g_active_module.top()->second.first;
     }
 
-    if (not(enabled or module_enabled)) return n;
+    if (enabled == false or module_enabled == false) return n;
 
 #if __cplusplus >= 201703L
     auto && [buffer, ansi_attribute_detected] = [this]() -> auto && {
@@ -220,7 +220,7 @@ protected:
       module_enabled = g_active_module.top()->second.first;
     }
 
-    if (not(enabled or module_enabled) or ch == std::char_traits<char>::eof()) {
+    if (enabled == false or module_enabled == false or ch == std::char_traits<char>::eof()) {
       return 0;
     }
 
@@ -238,28 +238,33 @@ protected:
     auto & ansi_attribute_detected = std::get<1>(tmp);
 #endif
 
-    buffer = create_banner() + buffer;
-    if (ansi_attribute_detected) {
-      ansi_attribute_detected = false;
-      buffer.append("\033[0m");
-    }
-    buffer.append(1, '\n');
+    if (ch != '\n') LIKELY {
+      buffer.append(1, ch);
+    } else {
+      buffer = create_banner() + buffer;
+      if (ansi_attribute_detected) {
+        ansi_attribute_detected = false;
+        buffer.append("\033[0m");
+      }
+      buffer.append(1, '\n');
 
-    //* Filter-out ANSI tokens
-    if (not allow_ansi) {
-      for (;;) {
-        auto start_position = buffer.find("\033[");
-        if (start_position == std::string::npos) break;
-        auto end_position = buffer.find("m", start_position);
-        if (end_position != std::string::npos) {
-          buffer.erase(start_position, end_position - start_position + 1);
+      //* Filter-out ANSI tokens
+      if (not allow_ansi) {
+        for (;;) {
+          auto start_position = buffer.find("\033[");
+          if (start_position == std::string::npos) break;
+          auto end_position = buffer.find("m", start_position);
+          if (end_position != std::string::npos) {
+            buffer.erase(start_position, end_position - start_position + 1);
+          }
         }
       }
-    }
 
-    std::streamsize result = callback_(*output_stream, buffer.c_str(), buffer.size());
-    buffer.clear();
-    return static_cast<int_type>(result);
+      std::streamsize result = callback_(*output_stream, buffer.c_str(), buffer.size());
+      buffer.clear();
+      return static_cast<int_type>(result);
+    }
+    return (unsigned char)ch;
   }
 
 private:
@@ -335,12 +340,9 @@ auto make_callback_ostreambuf(Callback cb, const char channel_txt[], std::vector
 }
 
 const auto callback = [](MAYBE_UNUSED std::ostream & output_stream, const void * buf, std::streamsize sz) -> std::streamsize {
-  char * const buffer = new char[sz + 1];
-  std::snprintf(buffer, static_cast<int>(sz + 1), "%.*s", static_cast<int>(sz), static_cast<const char *>(buf));
   std::lock_guard<std::mutex> guard(g_output_mutex);
-  output_stream << buffer;
+  output_stream.write(static_cast<char const*>(buf), sz);
   output_stream.flush();
-  delete[] buffer;
   return sz;
 };
 
@@ -468,6 +470,7 @@ DLL_PUBLIC std::string register_module(std::string module_name, std::string shor
   std::transform(short_module_name.begin(), short_module_name.end(), short_module_name.begin(),
     [](unsigned char c) { return std::toupper(c); });
   modules()[module_name] = std::make_pair(true, short_module_name);
+  modules()[module_name].first = modules()[MAIN_MODULE_NAME].first;
   return module_name;
 }
 

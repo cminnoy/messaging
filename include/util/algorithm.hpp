@@ -490,6 +490,13 @@ template <auto V>
 static constexpr auto compile_time = V;
 #endif
 
+#if __cplusplus >= CPP20_STANDARD
+/**
+ * @brief Detect at compile time if a type was introduced but not completly defined yet. 
+ */
+template<typename T, auto = []{}> struct is_type_complete : std::bool_constant<requires { sizeof(T); }> {};
+#endif
+
 } // namespace util
 
 #endif /* INCLUDE__UTIL__ALGORITHM_HPP */
