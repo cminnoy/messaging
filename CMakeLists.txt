@@ -1,6 +1,11 @@
 #cmake - format off
 cmake_minimum_required(VERSION 3.16.5)
-project(messaging LANGUAGES CXX VERSION 1.0.0)
+project(messaging
+    VERSION 1.0.1
+    DESCRIPTION "Multithreaded and coroutine messaging framework for C++14 and above."
+    HOMEPAGE_URL "https://github.com/cminnoy/messaging"
+    LANGUAGES CXX
+)
 
 # message("Your C++ compiler supports these C++ features:")
 # foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
@@ -140,6 +145,8 @@ set(messaging_SOURCES
     src/messaging__process.cpp
 )
 
+set(MESSAGING_FLAGS "")
+
 add_library(${PROJECT_NAME} SHARED ${messaging_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET default)
 target_include_directories(${PROJECT_NAME} PRIVATE ${concurrentqueue_SOURCE_DIR})
@@ -167,6 +174,7 @@ endif()
 # Tracy
 if(WITH_TRACY)
     add_compile_definitions(WITH_TRACY)
+    set(MESSAGING_FLAGS "${MESSAGING_FLAGS} -DWITH_TRACY")
     if(TRACY_ON_VIRTUAL_MACHINE)
         add_definitions(-DTRACY_TIMER_FALLBACK)
     endif()
@@ -191,22 +199,27 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ConcurrentQueue pthread)
 if(WITH_BOOST_COROUTINES)
     target_link_libraries(${PROJECT_NAME} PUBLIC boost_context)
     add_compile_definitions(WITH_BOOST_COROUTINES)
+    set(MESSAGING_FLAGS "${MESSAGING_FLAGS} -DWITH_BOOST_COROUTINES")
 endif()
 
 if(WITH_TRACER_SUPPORT)
     add_compile_definitions(WITH_TRACER_SUPPORT)
+    set(MESSAGING_FLAGS "${MESSAGING_FLAGS} -DWITH_TRACER_SUPPORT")
 endif()
 
 if(WITH_MESSAGE_SET_THREAD_NAME)
     add_compile_definitions(WITH_MESSAGE_SET_THREAD_NAME)
+    set(MESSAGING_FLAGS "${MESSAGING_FLAGS} -DWITH_SET_THREAD_NAME")
 endif()
 
 if(WITH_MESSAGE_SET_THREAD_PRIORITY)
     add_compile_definitions(WITH_MESSAGE_SET_THREAD_PRIORITY)
+    set(MESSAGING_FLAGS "${MESSAGING_FLAGS} -DWITH_SET_THREAD_PRIORITY")
 endif()
 
 if(WITH_MESSAGE_SET_THREAD_AFFINITY)
     add_compile_definitions(WITH_MESSAGE_SET_THREAD_AFFINITY)
+    set(MESSAGING_FLAGS "${MESSAGING_FLAGS} -DWITH_SET_THREAD_AFFINITY")
 endif()
 
 if(WITH_TRACY)
@@ -227,10 +240,17 @@ install(TARGETS ${PROJECT_NAME}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+configure_file(messaging.pc.in lib/pkgconfig/messaging.pc @ONLY)
+
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/" # source directory
         DESTINATION "include" # target directory
         FILES_MATCHING # install only matched files
         PATTERN "*" # select header files
+)
+
+install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/pkgconfig/messaging.pc
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig
 )
 
 if(WITH_EXAMPLES)
@@ -241,4 +261,3 @@ if(WITH_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
-
